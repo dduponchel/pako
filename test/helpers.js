@@ -30,6 +30,42 @@ function loadSamples() {
   return result;
 }
 
+// Load fixtures to test
+// return: { 'filename1': {
+//  content : content1,
+//  expected : expected1
+// },
+// 'filename2': {
+//  content : content2,
+//  expected : expected2
+// } ...
+//
+function loadSamplesDeflatedRaw() {
+  var result = {};
+  var dir = path.join(__dirname, 'fixtures/samples_deflated_raw/');
+
+  var filterCompressedFiles = function (file) {
+    return !!file.match(/\.compressed$/);
+  };
+  fs.readdirSync(dir).sort().filter(filterCompressedFiles).forEach(function (sample) {
+    var filepath        = path.join(dir, sample),
+        extname         = path.extname(filepath),
+        basename        = path.basename(filepath, extname),
+        expectedpath    = path.join(dir, basename + '.data'),
+        content         = new Uint8Array(fs.readFileSync(filepath)),
+        expectedContent = new Uint8Array(fs.readFileSync(expectedpath));
+
+    if (basename[0] === '_') { return; } // skip files with name, started with dash
+
+    result[basename] = {
+      content : content,
+      expected : expectedContent
+    };
+  });
+
+  return result;
+}
+
 
 // Compare 2 buffers (can be Array, Uint8Array, Buffer).
 //
@@ -164,8 +200,36 @@ function testInflate(samples, inflateOptions, deflateOptions, callback) {
   callback();
 }
 
+function testInflateExternal(samples, inflateOptions, callback) {
+  var name, content, expected, inflated;
+
+  for (name in samples) {
+    content = samples[name].content;
+    expected  = samples[name].expected;
+
+    inflated = pako.inflate(content, inflateOptions);
+
+    if (!cmpBuf(inflated, expected)) {
+      callback(new Error('Error in "' + name + '" - inflate result != original'));
+      return;
+    }
+
+    // with typed arrays
+    inflated = pako.inflateRaw(content, inflateOptions);
+
+    if (!cmpBuf(inflated, expected)) {
+      callback('Error in "' + name + '" - inflate result != original');
+      return;
+    }
+  }
+
+  callback();
+}
+
 
 exports.cmpBuf = cmpBuf;
 exports.testDeflate = testDeflate;
 exports.testInflate = testInflate;
+exports.testInflateExternal = testInflateExternal;
 exports.loadSamples = loadSamples;
+exports.loadSamplesDeflatedRaw = loadSamplesDeflatedRaw;

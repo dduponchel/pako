@@ -6,9 +6,11 @@
 
 var helpers = require('./helpers');
 var testInflate = helpers.testInflate;
+var testInflateExternal = helpers.testInflateExternal;
 
 
 var samples = helpers.loadSamples();
+var samplesDeflatedRaw = helpers.loadSamplesDeflatedRaw();
 
 
 describe('Inflate defaults', function () {
@@ -154,4 +156,10 @@ describe('Inflate RAW', function () {
     testInflate(samples, { raw: true }, { level: 0, raw: true }, done);
   });
 
+});
+
+describe('Inflate RAW data deflated by other programs', function () {
+  it('inflate data from external sources', function (done) {
+    testInflateExternal(samplesDeflatedRaw, {raw: true}, done);
+  });
 });
